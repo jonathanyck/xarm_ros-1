@@ -31,6 +31,46 @@
       <color rgba="0.753 0.753 0.753 1.0"/>
     </material>
 
+    <xacro:if value="${mobile_base}">
+    <link name="${prefix}mobile_base">
+      <visual>
+        <origin
+          xyz="0 0 0"
+          rpy="0 0 0" />
+        <geometry>
+          <mesh
+            filename="package://xarm_description/meshes/mobile_base/mobile_base_reduced.stl" />
+        </geometry>
+        <material name="Silver" />
+      </visual>
+      <collision>
+        <origin
+          xyz="0 0 0"
+          rpy="0 0 0" />
+        <geometry>
+          <mesh
+            filename="package://xarm_description/meshes/mobile_base/mobile_base_reduced.stl" />
+        </geometry>
+      </collision>
+    </link>
+  </xacro:if>
+
+  <xacro:unless value="${mobile_base}">
+    <link name="${prefix}mobile_base"/>
+  </xacro:unless>
+
+  <joint
+    name="${prefix}joint_mobile_base"
+    type="fixed">
+    <origin
+      xyz="0 0 0"
+      rpy="0 0 0" />
+    <parent
+      link="${prefix}mobile_base" />
+    <child
+      link="${prefix}link_base" />
+  </joint>
+
     <link name="${prefix}link_base">
       <visual>
         <geometry>
