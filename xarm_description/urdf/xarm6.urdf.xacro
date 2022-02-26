@@ -40,6 +40,8 @@
         <geometry>
           <mesh
             filename="package://xarm_description/meshes/mobile_base/mobile_base_reduced.stl" />
+
+            <!-- filename="package://xarm_description/meshes/mobile_base/assembly_docked_tool.stl" /> -->
         </geometry>
         <material name="Silver" />
       </visual>
@@ -50,6 +52,8 @@
         <geometry>
           <mesh
             filename="package://xarm_description/meshes/mobile_base/mobile_base_reduced.stl" />
+
+            <!-- filename="package://xarm_description/meshes/mobile_base/assembly_docked_tool.stl" /> -->
         </geometry>
       </collision>
     </link>
