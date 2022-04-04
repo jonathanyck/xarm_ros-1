@@ -70,6 +70,7 @@ add_service_files(
   joint_plan.srv
   exec_plan.srv
   single_straight_plan.srv
+  plan_scene.srv
 )
 
 ## Generate actions in the 'action' folder
