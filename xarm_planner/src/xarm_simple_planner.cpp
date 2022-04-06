@@ -71,7 +71,7 @@ class XArmSimplePlanner
     void show_trail(bool plan_result);
 
     // newly added for attaching obstacles
-    void add_cleaning_tool(int option, double* orient, double* coordinates, double* size);
+    void add_obstacle(std::string option, std::string link_name, std::string id, double* orient, double* coordinates, double* size);
     bool plan_scene_cb(xarm_planner::plan_scene::Request &req, xarm_planner::plan_scene::Response &res);
 };
 
@@ -89,14 +89,12 @@ void XArmSimplePlanner::init()
   plan_pose_srv = node_handle.advertiseService("xarm_pose_plan", &XArmSimplePlanner::do_pose_plan, this);
   plan_joint_srv = node_handle.advertiseService("xarm_joint_plan", &XArmSimplePlanner::do_joint_plan, this);
   sing_cart_srv = node_handle.advertiseService("xarm_straight_plan", &XArmSimplePlanner::do_single_cartesian_plan, this);
-
   exec_plan_sub = node_handle.subscribe("xarm_planner_exec", 10, &XArmSimplePlanner::execute_plan_topic, this);
   exec_plan_srv = node_handle.advertiseService("xarm_exec_plan", &XArmSimplePlanner::exec_plan_cb, this);
 
   // newly added for attaching obstacles
   planning_scene_pub = node_handle.advertise<moveit_msgs::PlanningScene>("planning_scene", 1);
   planning_scene_srv = node_handle.advertiseService("planning_scene_add_obstacles", &XArmSimplePlanner::plan_scene_cb, this);
-
 
   visual_tools = new moveit_visual_tools::MoveItVisualTools("link_base");
   Eigen::Isometry3d text_pose = Eigen::Isometry3d::Identity();
@@ -106,10 +104,11 @@ void XArmSimplePlanner::init()
 }
 
  // newly added for attaching obstacles
-void XArmSimplePlanner::add_cleaning_tool(int option, double* orient, double* coordinates, double* size) {
+void XArmSimplePlanner::add_obstacle(std::string option, std::string link_name, std::string id, double* orient, double* coordinates, double* size) {
   moveit_msgs::PlanningScene planning_scene;
   moveit_msgs::AttachedCollisionObject attached_object;
   moveit_msgs::CollisionObject remove_object;
+
   geometry_msgs::Pose pose;
   pose.orientation.x = orient[0];
   pose.orientation.y = orient[1];
@@ -118,6 +117,7 @@ void XArmSimplePlanner::add_cleaning_tool(int option, double* orient, double* co
   pose.position.x = coordinates[0];
   pose.position.y = coordinates[1];
   pose.position.z = coordinates[2];
+
   shape_msgs::SolidPrimitive primitive;
   primitive.type = primitive.BOX;
   primitive.dimensions.resize(3);
@@ -125,33 +125,37 @@ void XArmSimplePlanner::add_cleaning_tool(int option, double* orient, double* co
   primitive.dimensions[1] = size[1];
   primitive.dimensions[2] = size[2];
 
-  if (option == 1) { // attach
-    attached_object.link_name = "link6";
-    attached_object.object.header.frame_id = "link6";
-    attached_object.object.id = "box";
+  if (option == "world" || option == "attach") { // attach
+    attached_object.link_name = link_name;
+    attached_object.object.header.frame_id = link_name;
+    attached_object.object.id = id;
     attached_object.object.primitives.push_back(primitive);
     attached_object.object.primitive_poses.push_back(pose);
     attached_object.object.operation = attached_object.object.ADD;
-    attached_object.touch_links = std::vector<std::string>{"box", "link6"};
+    attached_object.touch_links = std::vector<std::string>{"box", link_name};
     planning_scene.world.collision_objects.push_back(attached_object.object);
     planning_scene.is_diff = true;
-    planning_scene_pub.publish(planning_scene);
-    remove_object.id = "box";
-    remove_object.header.frame_id = "link6";
-    remove_object.operation = remove_object.REMOVE;
-    planning_scene.world.collision_objects.clear();
-    planning_scene.world.collision_objects.push_back(remove_object);
-    planning_scene.robot_state.attached_collision_objects.push_back(attached_object);
+    if (option == "attach") {
+      remove_object.id = id;
+      remove_object.header.frame_id = link_name;
+      remove_object.operation = remove_object.REMOVE;
+      planning_scene.world.collision_objects.clear();
+      planning_scene.world.collision_objects.push_back(remove_object);
+      planning_scene.robot_state.attached_collision_objects.push_back(attached_object);
+    }
     planning_scene_pub.publish(planning_scene);
   }
-  else if (option == 2) {}
 }
 
 bool XArmSimplePlanner::plan_scene_cb(xarm_planner::plan_scene::Request &req, xarm_planner::plan_scene::Response &res) {
-  double orient[4] = {req.target.orientation.x, req.target.orientation.y, req.target.orientation.z, req.target.orientation.w};
-  double coordinates[3] = {req.target.position.x, req.target.position.y, req.target.position.z};
-  double size[3] = {req.size_x, req.size_y, req.size_z};
-  add_cleaning_tool(req.attach_remove, orient, coordinates, size);
+  double orient_tool[4] = {req.tool_pose.orientation.x, req.tool_pose.orientation.y, req.tool_pose.orientation.z, req.tool_pose.orientation.w};
+  double coordinates_tool[3] = {req.tool_pose.position.x, req.tool_pose.position.y, req.tool_pose.position.z};
+  double size_tool[3] = {req.tool_x, req.tool_y, req.tool_z};
+  double orient_table[4] = {req.table_pose.orientation.x, req.table_pose.orientation.y, req.table_pose.orientation.z, req.table_pose.orientation.w};
+  double coordinates_table[3] = {req.table_pose.position.x, req.table_pose.position.y, req.table_pose.position.z};
+  double size_table[3] = {req.table_x, req.table_y, req.table_z};
+  add_obstacle(req.attach_remove, req.link_name, req.id, orient_tool, coordinates_tool, size_tool);
+  add_obstacle("world", "link_base" , "table", orient_table, coordinates_table, size_table);
   return true;
 }
 

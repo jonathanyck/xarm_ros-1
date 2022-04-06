@@ -1,8 +1,14 @@
-uint8 attach_remove
-geometry_msgs/Pose target
-float64 size_x
-float64 size_y
-float64 size_z
+string attach_remove
+geometry_msgs/Pose tool_pose
+geometry_msgs/Pose table_pose
+float64 tool_x
+float64 tool_y
+float64 tool_z
+float64 table_x
+float64 table_y
+float64 table_z
+string link_name
+string id
 
 ---
 
